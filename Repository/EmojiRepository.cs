@@ -1,21 +1,35 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using EmojiGeneratorAPI;
 using EmojiGeneratorAPI.Models;
-namespace EmojiGeneratorAPIj.Repository;
+using Newtonsoft.Json;
+namespace EmojiGeneratorAPI;
 
 public class EmojiRepository : IRepository
 {
-    private readonly HttpClient _httpClient;
-    private List<Emoji> _emojis = new List<Emoji>();
-    public EmojiRepository()
+    private static List<Emoji>? _emojis;
+    private readonly IHttpClientFactory _httpClientFactory;
+    static EmojiRepository()
     {
-        _httpClient = new HttpClient();
+        _emojis = new List<Emoji>();
     }
-    public async Task Get()
+    public EmojiRepository(IHttpClientFactory httpClientFactory)
     {
-        var response = await _httpClient.GetAsync("https://emojihub.herokuapp.com/api/all");
-        var data = await response.Content.ReadAsStringAsync();
+        _httpClientFactory = httpClientFactory;
+    }
 
-        // _emojis = from emoji in data
-        //           select emoji;
+    public async Task<IEnumerable<Emoji>> Get()
+    {
+        if (_emojis == null || _emojis.Count <= 0)
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            var json = await httpClient.GetStringAsync("https://emojihub.herokuapp.com/api/all");
+            _emojis = JsonConvert.DeserializeObject<List<Emoji>>(json);
+            return _emojis;
+        }
+        else
+        {
+            return _emojis;
+        }
     }
 }
